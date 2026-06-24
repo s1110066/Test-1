@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>👟 穿鞋帶小遊戲</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+    }
+    body {
+      font-family: "Microsoft JhengHei", "Segoe UI", sans-serif;
+      background: linear-gradient(145deg, #b2ebf2 0%, #80deea 100%);
+      min-height: 100vh;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+    }
+    .game-wrapper {
+      background-color: #f5f5f5;
+      border-radius: 60px 60px 40px 40px;
+      padding: 30px 20px 40px;
+      box-shadow: 0 20px 30px rgba(0, 0, 0, 0.3), inset 0 -4px 0 #b0bec5;
+      max-width: 500px;
+      width: 100%;
+    }
+    h1 {
+      margin: 0 0 4px;
+      font-size: 2.1rem;
+      color: #004d40;
+      letter-spacing: 2px;
+      text-shadow: 2px 2px 0 #b2dfdb;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+    }
+    h1 span {
+      font-size: 2rem;
+    }
+    .sub {
+      margin: 0 0 18px;
+      font-size: 1.1rem;
+      color: #00695c;
+      background: #e0f2f1;
+      display: inline-block;
+      padding: 6px 24px;
+      border-radius: 40px;
+      font-weight: 500;
+      box-shadow: inset 0 -2px 0 #a5d6a7;
+    }
+    #game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+    #game-board {
+      position: relative;
+      width: 300px;
+      height: 400px;
+      background: #ffb74d;  /* 鞋面主色 */
+      border-radius: 45% 45% 30% 30% / 60% 60% 20% 20%;
+      border: 10px solid #e65100;
+      box-shadow: inset 0 -12px 0 #bf360c, 0 16px 28px rgba(0,0,0,0.3);
+      overflow: visible;
+      margin: 0 auto;
+      transition: 0.15s;
+    }
+    /* 鞋舌裝飾 */
+    #tongue {
+      position: absolute;
+      top: 44px;
+      left: 70px;
+      width: 160px;
+      height: 360px;
+      background: #ffa726;
+      border-radius: 30px 30px 18px 18px;
+      border: 3px dashed #d84315;
+      box-shadow: inset 0 -4px 0 #e64a19;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.5;
+    }
+    /* 所有鞋孔 */
+    .hole {
+      position: absolute;
+      width: 26px;
+      height: 26px;
+      background: radial-gradient(circle at 30% 30%, #555, #1a1a1a);
+      border-radius: 50%;
+      border: 4px solid #f5f5f5;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.6), inset 0 -3px 0 #222;
+      cursor: pointer;
+      transition: all 0.12s ease;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .hole::after {
+      content: "○";
+      font-size: 14px;
+      color: rgba(255,255,240,0.2);
+      font-weight: bold;
+      text-shadow: 0 0 3px #000;
+    }
+    .hole:hover {
+      transform: scale(1.18);
+      border-color: #fff9c4;
+      box-shadow: 0 0 12px #ffd54f;
+    }
+    .hole.active {
+      transform: scale(1.2);
+      border-color: #ffeb3b;
+      box-shadow: 0 0 20px #fdd835;
+      background: radial-gradient(circle at 30% 30%, #888, #222);
+    }
+    .hole.laced {
+      background: radial-gradient(circle at 30% 30%, #fbc02d, #f57f17);
+      border-color: #ffecb3;
+      box-shadow: 0 0 12px #ffb300;
+    }
+    .hole.laced::after {
+      content: "✕";
+      color: #3e2723;
+      font-size: 16px;
+      text-shadow: 0 1px 0 #ffca28;
+    }
+    /* 鞋帶繪製 canvas */
+    #lace-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      pointer-events: none;
+      z-index: 15;
+    }
+    #control-bar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 18px;
+      margin-top: 12px;
+      background: #eceff1;
+      padding: 12px 24px;
+      border-radius: 60px;
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.08), 0 8px 12px rgba(0,0,0,0.1);
+    }
+    .btn {
+      background: #37474f;
+      border: none;
+      border-radius: 40px;
+      color: white;
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 10px 24px;
+      cursor: pointer;
+      box-shadow: 0 4px 0 #1e272e, 0 4px 8px rgba(0,0,0,0.2);
+      transition: all 0.08s linear;
+      letter-spacing: 1px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn:active {
+      transform: translateY(4px);
+      box-shadow: 0 0px 0 #1e272e, 0 6px 12px rgba(0,0,0,0.1);
+    }
+    .btn.reset {
+      background: #bf360c;
+      box-shadow: 0 4px 0 #6d1a00;
+    }
+    .btn.reset:active {
+      box-shadow: 0 0px 0 #6d1a00;
+    }
+    .btn.undo {
+      background: #00695c;
+      box-shadow: 0 4px 0 #003d33;
+    }
+    .btn.undo:active {
+      box-shadow: 0 0px 0 #003d33;
+    }
+    #status {
+      background: #263238;
+      padding: 6px 18px;
+      border-radius: 50px;
+      color: #eceff1;
+      font-weight: 500;
+      font-size: 0.95rem;
+      min-width: 140px;
+      box-shadow: inset 0 2px 4px #00000055;
+    }
+    #counter {
+      background: #fff;
+      color: #004d40;
+      padding: 0 14px;
+      border-radius: 30px;
+      font-weight: 700;
+      font-size: 1.2rem;
+      line-height: 2rem;
+      min-width: 60px;
+      box-shadow: inset 0 -2px 0 #b0bec5;
+    }
+    .footer-note {
+      margin-top: 20px;
+      font-size: 0.9rem;
+      color: #004d40;
+      background: #b2dfdb;
+      padding: 4px 20px;
+      border-radius: 60px;
+      opacity: 0.8;
+    }
+    @media (max-width: 420px) {
+      .game-wrapper { padding: 20px 12px; }
+      #game-board { width: 260px; height: 350px; }
+      #tongue { left: 60px; width: 140px; height: 310px; }
+      .hole { width: 22px; height: 22px; border-width: 3px; }
+      .hole::after { font-size: 10px; }
+      #control-bar { gap: 8px; padding: 10px 14px; }
+      .btn { padding: 6px 16px; font-size: 0.9rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="game-wrapper">
+  <h1>
+    <span>👟</span> 穿鞋帶
+  </h1>
+  <div class="sub">點擊鞋孔 · 交錯穿梭</div>
+  <div id="game-container">
+    <div id="game-board">
+      <div id="tongue"></div>
+      <canvas id="lace-canvas" width="300" height="400"></canvas>
+      <!-- 鞋孔由 JS 動態產生 -->
+    </div>
+    <div id="control-bar">
+      <button class="btn undo" id="undoBtn">↩ 還原</button>
+      <span id="status">⚡ 步驟 <span id="counter">0</span></span>
+      <button class="btn reset" id="resetBtn">⟳ 重來</button>
+    </div>
+  </div>
+  <div class="footer-note">⚡ 左右交替 · 一筆畫</div>
+</div>
+<script>
+  (function() {
+    // ----- 設定鞋孔 (左 / 右) -----
+    const HOLES = {
+      left: [
+        { row: 1, col: 1 },  // 左上
+        { row: 2, col: 1 },
+        { row: 3, col: 1 },
+        { row: 4, col: 1 },
+        { row: 5, col: 1 },  // 左下
+      ],
+      right: [
+        { row: 1, col: 5 },
+        { row: 2, col: 5 },
+        { row: 3, col: 5 },
+        { row: 4, col: 5 },
+        { row: 5, col: 5 },
+      ]
+    };
+
+    // 座標換算 (基於 board 尺寸)
+    function getHolePos(row, col, boardWidth, boardHeight) {
+      const paddingX = 42;
+      const paddingY = 60;
+      const x = paddingX + (col - 1) * ((boardWidth - 2 * paddingX) / 4);
+      const y = paddingY + (row - 1) * ((boardHeight - 2 * paddingY) / 4);
+      return { x, y };
+    }
+
+    // ----- 遊戲狀態 -----
+    let state = {
+      // 所有鞋孔資料 (id, 座標, 是否已被穿過)
+      holes: [],
+      // 鞋帶路徑: 存放已點擊的 hole id (順序)
+      path: [],
+      // 最近一次點擊的 hole id (用於判斷)
+      lastId: null,
+    };
+
+    // DOM 元素
+    const boardEl = document.getElementById('game-board');
+    const canvas = document.getElementById('lace-canvas');
+    const ctx = canvas.getContext('2d');
+    const counterSpan = document.getElementById('counter');
+    const statusSpan = document.getElementById('status');
+
+    // 初始化 holes 陣列
+    function buildHolesData() {
+      const boardRect = boardEl.getBoundingClientRect();
+      // 使用 board 實際寬高來計算 (但我們用固定尺寸 300x400 較一致)
+      const w = 300, h = 400;
+      const holeList = [];
+      let id = 0;
+      // 左邊
+      HOLES.left.forEach(({ row, col }) => {
+        const pos = getHolePos(row, col, w, h);
+        holeList.push({
+          id: id++,
+          side: 'left',
+          row, col,
+          x: pos.x, y: pos.y,
+          laced: false,
+        });
+      });
+      // 右邊
+      HOLES.right.forEach(({ row, col }) => {
+        const pos = getHolePos(row, col, w, h);
+        holeList.push({
+          id: id++,
+          side: 'right',
+          row, col,
+          x: pos.x, y: pos.y,
+          laced: false,
+        });
+      });
+      return holeList;
+    }
+
+    // 重設狀態
+    function resetGame() {
+      state.holes = buildHolesData();
+      state.path = [];
+      state.lastId = null;
+      renderHoles();
+      drawLaces();
+      updateCounter();
+      updateStatus();
+    }
+
+    // 產生 DOM 鞋孔
+    function renderHoles() {
+      // 移除舊有的 .hole
+      document.querySelectorAll('.hole').forEach(el => el.remove());
+
+      state.holes.forEach(h => {
+        const div = document.createElement('div');
+        div.className = 'hole';
+        if (h.laced) div.classList.add('laced');
+        // 定位
+        div.style.left = (h.x - 13) + 'px';
+        div.style.top = (h.y - 13) + 'px';
+        div.dataset.id = h.id;
+        div.dataset.side = h.side;
+        div.addEventListener('click', holeClickHandler);
+        boardEl.appendChild(div);
+      });
+    }
+
+    // 更新鞋孔樣式 (根據 laced)
+    function updateHolesStyle() {
+      document.querySelectorAll('.hole').forEach(el => {
+        const id = parseInt(el.dataset.id, 10);
+        const hole = state.holes.find(h => h.id === id);
+        if (!hole) return;
+        if (hole.laced) {
+          el.classList.add('laced');
+          el.classList.remove('active');
+        } else {
+          el.classList.remove('laced', 'active');
+        }
+      });
+      // 若有 lastId 高亮
+      if (state.lastId !== null) {
+        const lastEl = document.querySelector(`.hole[data-id="${state.lastId}"]`);
+        if (lastEl) lastEl.classList.add('active');
+      }
+    }
+
+    // 繪製鞋帶 (canvas)
+    function drawLaces() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (state.path.length < 2) return;
+
+      ctx.beginPath();
+      ctx.lineWidth = 6;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.shadowColor = 'rgba(0,0,0,0.3)';
+      ctx.shadowBlur = 8;
+
+      // 用漸層讓鞋帶更真實
+      const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+      gradient.addColorStop(0, '#fdd835');
+      gradient.addColorStop(0.3, '#fbc02d');
+      gradient.addColorStop(0.7, '#f9a825');
+      gradient.addColorStop(1, '#f57f17');
+      ctx.strokeStyle = gradient;
+
+      // 根據 path 畫出連續線段
+      const firstHole = state.holes.find(h => h.id === state.path[0]);
+      if (!firstHole) return;
+      ctx.moveTo(firstHole.x, firstHole.y);
+
+      for (let i = 1; i < state.path.length; i++) {
+        const id = state.path[i];
+        const hole = state.holes.find(h => h.id === id);
+        if (!hole) continue;
+        ctx.lineTo(hole.x, hole.y);
+      }
+      ctx.stroke();
+
+      // 描邊增加立體感
+      ctx.shadowBlur = 0;
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#3e2723';
+      ctx.globalAlpha = 0.3;
+      ctx.stroke();
+      ctx.globalAlpha = 1.0;
+
+      // 畫上小圓點
+      state.path.forEach(id => {
+        const h = state.holes.find(hh => hh.id === id);
+        if (!h) return;
+        ctx.beginPath();
+        ctx.arc(h.x, h.y, 6, 0, 2 * Math.PI);
+        ctx.fillStyle = '#ffca28';
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#ffb300';
+        ctx.fill();
+      });
+    }
+
+    // 點擊處理 (核心邏輯)
+    function holeClickHandler(e) {
+      const div = e.currentTarget;
+      const id = parseInt(div.dataset.id, 10);
+      const hole = state.holes.find(h => h.id === id);
+      if (!hole) return;
+
+      // 已經穿過的孔不能再次點擊 (但允許最後一顆? 不能重複)
+      if (hole.laced) return;
+
+      // 檢查路徑規則：左右交替，且不能連續同側
+      const lastId = state.lastId;
+      if (lastId !== null) {
+        const lastHole = state.holes.find(h => h.id === lastId);
+        if (!lastHole) return;
+        // 同側檢查
+        if (lastHole.side === hole.side) {
+          // 同側不能連續
+          statusSpan.innerText = '⚠️ 請左右交替';
+          setTimeout(() => updateStatus(), 500);
+          return;
+        }
+        // 額外: 不能選同一 row ? 沒有限制，但可增加變化，我們保留寬鬆
+      }
+
+      // 通過: 標記為 laced, 加入 path
+      hole.laced = true;
+      state.path.push(id);
+      state.lastId = id;
+
+      // 更新顯示
+      updateHolesStyle();
+      drawLaces();
+      updateCounter();
+
+      // 檢查是否完成 (所有孔都已穿)
+      const allLaced = state.holes.every(h => h.laced);
+      if (allLaced) {
+        statusSpan.innerText = '🎉 完成！ 好棒！';
+      } else {
+        updateStatus();
+      }
+    }
+
+    // 還原上一步
+    function undoStep() {
+      if (state.path.length === 0) return;
+      // 移除最後一個
+      const lastId = state.path.pop();
+      const hole = state.holes.find(h => h.id === lastId);
+      if (hole) {
+        hole.laced = false;
+      }
+      // 更新 lastId
+      state.lastId = state.path.length > 0 ? state.path[state.path.length - 1] : null;
+      updateHolesStyle();
+      drawLaces();
+      updateCounter();
+      updateStatus();
+    }
+
+    // 更新計數器
+    function updateCounter() {
+      counterSpan.innerText = state.path.length;
+    }
+
+    // 更新狀態文字
+    function updateStatus() {
+      if (state.path.length === 0) {
+        statusSpan.innerText = '⚡ 從任一孔開始';
+        return;
+      }
+      const total = state.holes.length;
+      const done = state.path.length;
+      if (done === total) {
+        statusSpan.innerText = '🎉 完成！ 太棒啦';
+      } else {
+        statusSpan.innerText = `👟 已穿 ${done} / ${total}`;
+      }
+    }
+
+    // 重置按鈕
+    document.getElementById('resetBtn').addEventListener('click', resetGame);
+    document.getElementById('undoBtn').addEventListener('click', undoStep);
+
+    // 初始建立
+    resetGame();
+
+    // 視窗 resize 簡單重繪 (保持正確)
+    window.addEventListener('resize', () => {
+      drawLaces();
+    });
+
+    // 額外: 觸摸友善
+    document.querySelectorAll('.hole').forEach(el => {
+      el.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        holeClickHandler.call(el, e);
+      }, { passive: false });
+    });
+  })();
+</script>
+</body>
+</html>
